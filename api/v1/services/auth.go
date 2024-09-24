@@ -88,7 +88,7 @@ func CreateUserHandler(c *gin.Context) {
         return
     }
 
-    c.IndentedJSON(http.StatusCreated, gin.H{"access_token": token})
+    c.IndentedJSON(http.StatusCreated, gin.H{"id_token": token, "access_token": token, "refresh_token": token, "expires_in": 3600, "token_type": "Bearer"})
 }
 
 func LoginUserHandler(c *gin.Context) {
@@ -103,7 +103,7 @@ func LoginUserHandler(c *gin.Context) {
         return
     }
     if !exists {
-        c.IndentedJSON(http.StatusUnauthorized, gin.H{"error": "User does not exists"})
+        c.IndentedJSON(http.StatusUnauthorized, gin.H{"error": "Invalid login credentials"})
         return
     }
 
@@ -124,7 +124,7 @@ func LoginUserHandler(c *gin.Context) {
         return
     }
 
-    c.IndentedJSON(http.StatusOK, gin.H{"access_token": token})
+    c.IndentedJSON(http.StatusOK, gin.H{"id_token": token, "access_token": token, "refresh_token": token, "expires_in": 3600, "token_type": "Bearer"})
 }
 
 func GetAllUsers(c *gin.Context) {
