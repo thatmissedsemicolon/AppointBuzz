@@ -9,16 +9,16 @@ import (
 	"gorm.io/gorm"
 )
 
-var Db *gorm.DB
+var DB *gorm.DB
 
 func InitializeDatabase() {
     var err error
-    Db, err = gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+    DB, err = gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
     if err != nil {
         log.Fatalf("failed to connect to database: %v", err)
     }
 
-    if err := Db.AutoMigrate(&User{}); err != nil {
+    if err := DB.AutoMigrate(&User{}); err != nil {
         log.Fatalf("failed to migrate database: %v", err)
     }
 }

@@ -33,7 +33,7 @@ func validateEmail(email string) (bool, error) {
 
 func userExists(email string) (bool, error) {
     var user sql.User
-    err := sql.Db.Where("email = ?", email).First(&user).Error
+    err := sql.DB.Where("email = ?", email).First(&user).Error
     if err != nil {
         if err == gorm.ErrRecordNotFound {
             return false, nil
@@ -77,7 +77,7 @@ func CreateUserHandler(c *gin.Context) {
     }
 
     newUser := sql.User{ID: uuid.New(), Email: signupReq.Email, Password: hashedPassword}
-    if err := sql.Db.Create(&newUser).Error; err != nil {
+    if err := sql.DB.Create(&newUser).Error; err != nil {
         c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
         return
     }
@@ -108,7 +108,7 @@ func LoginUserHandler(c *gin.Context) {
     }
 
     var user sql.User
-    if err := sql.Db.Where("email = ?", loginReq.Email).First(&user).Error; err != nil {
+    if err := sql.DB.Where("email = ?", loginReq.Email).First(&user).Error; err != nil {
         c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
         return
     }
@@ -134,9 +134,9 @@ func GetAllUsers(c *gin.Context) {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user information"})
         return
     }
-
+    
     var users []sql.User
-    if err := sql.Db.Find(&users).Error; err != nil {
+    if err := sql.DB.Find(&users).Error; err != nil {
         c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve users"})
         return
     }

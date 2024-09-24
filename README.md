@@ -43,7 +43,7 @@ For those interested in exploring the transition themselves or understanding mor
 ```
 5. Run the Application
 ```sh
-  go run app.go
+  go run main.go
 ```
 
 ## Explore the documentation and code samples
