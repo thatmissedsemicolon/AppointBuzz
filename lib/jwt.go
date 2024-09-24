@@ -25,6 +25,7 @@ var (
 
 type Claims struct {
     Email string `json:"email"`
+    Roles string `json:"roles,omitempty"`
     jwt.RegisteredClaims
 }
 
@@ -117,29 +118,52 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 
         if claims, ok := token.Claims.(*Claims); ok && token.Valid {
             c.Set("email", claims.Email)
+            c.Set("roles", claims.Roles)
             c.Next()
         }
     }
 }
 
-func CreateToken(email string) (string, error) {
+func CreateTokens(roles string, email string) (string, string, error) {
     if err := loadKeys(); err != nil {
-        return "", err
+        return "", "", err
     }
 
-    claims := &Claims{
+    accessTokenClaims := &Claims{
         Email: email,
+        Roles: roles,
         RegisteredClaims: jwt.RegisteredClaims{
+            ID: fmt.Sprintf("%d", time.Now().Unix()),
+            Issuer: "https://appointbuzz.com",
+            Audience:  jwt.ClaimStrings{"appointbuzz"},
+            IssuedAt:  jwt.NewNumericDate(time.Now()),
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
         },
     }
 
-    token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-    tokenString, err := token.SignedString(privateKey)
-
+    accessToken := jwt.NewWithClaims(jwt.SigningMethodRS256, accessTokenClaims)
+    accessTokenString, err := accessToken.SignedString(privateKey)
     if err != nil {
-        return "", fmt.Errorf("failed to sign token: %w", err)
+        return "", "", fmt.Errorf("failed to sign access token: %w", err)
     }
 
-    return tokenString, nil
+    refreshTokenClaims := &Claims{
+        Email: email,
+        Roles: roles,
+        RegisteredClaims: jwt.RegisteredClaims{
+            ID: fmt.Sprintf("%d", time.Now().Unix()),
+            Issuer: "https://appointbuzz.com",
+            Audience:  jwt.ClaimStrings{"appointbuzz"},
+            IssuedAt:  jwt.NewNumericDate(time.Now()),
+            ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
+        },
+    }
+
+    refreshToken := jwt.NewWithClaims(jwt.SigningMethodRS256, refreshTokenClaims)
+    refreshTokenString, err := refreshToken.SignedString(privateKey)
+    if err != nil {
+        return "", "", fmt.Errorf("failed to sign refresh token: %w", err)
+    }
+
+    return accessTokenString, refreshTokenString, nil
 }

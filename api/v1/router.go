@@ -3,6 +3,7 @@ package router
 import (
     "github.com/gin-gonic/gin"
     auth "appointbuzz/api/v1/services"
+    user "appointbuzz/api/v1/services"
 )
 
 func AuthRoutes(group *gin.RouterGroup) {
@@ -11,5 +12,5 @@ func AuthRoutes(group *gin.RouterGroup) {
 }
 
 func UserRoutes(group *gin.RouterGroup) {
-    group.GET("/users", auth.GetAllUsers)
+    group.GET("/users", user.GetAllUsers)
 }

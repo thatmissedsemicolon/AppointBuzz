@@ -1,51 +1,18 @@
-package auth
+package services
 
 import (
-    "net/http"
-    "net/mail"
+	"net/http"
 
-    "github.com/gin-gonic/gin"
-    "github.com/google/uuid"
-    "golang.org/x/crypto/bcrypt"
-    "gorm.io/gorm"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 
-    sql "appointbuzz/api/v1/sql"
-    jwt "appointbuzz/lib"
+	sql "appointbuzz/api/v1/sql"
+	jwt "appointbuzz/lib"
 )
 
 type UserRequest struct {
     Email    string `json:"email"`
     Password string `json:"password"`
-}
-
-func bindJSON(c *gin.Context, target interface{}) error {
-    if err := c.BindJSON(target); err != nil {
-        c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format"})
-        return err
-    }
-    return nil
-}
-
-func validateEmail(email string) (bool, error) {
-    _, err := mail.ParseAddress(email)
-    return err == nil, err
-}
-
-func userExists(email string) (bool, error) {
-    var user sql.User
-    err := sql.DB.Where("email = ?", email).First(&user).Error
-    if err != nil {
-        if err == gorm.ErrRecordNotFound {
-            return false, nil
-        }
-        return false, err
-    }
-    return true, nil
-}
-
-func hashPassword(password string) (string, error) {
-    bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10)
-    return string(bytes), err
 }
 
 func CreateUserHandler(c *gin.Context) {
@@ -76,19 +43,24 @@ func CreateUserHandler(c *gin.Context) {
         return
     }
 
-    newUser := sql.User{ID: uuid.New(), Email: signupReq.Email, Password: hashedPassword}
+    newUser := sql.User{Email: signupReq.Email, Password: hashedPassword, Roles: convertRolesToString([]string{"user"})}
     if err := sql.DB.Create(&newUser).Error; err != nil {
         c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
         return
     }
 
-    token, err := jwt.CreateToken(newUser.Email)
+    accessToken, refreshToken, err := jwt.CreateTokens(newUser.Roles, newUser.Email)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access token"})
         return
     }
 
-    c.IndentedJSON(http.StatusCreated, gin.H{"id_token": token, "access_token": token, "refresh_token": token, "expires_in": 3600, "token_type": "Bearer"})
+    c.IndentedJSON(http.StatusCreated, gin.H{
+        "access_token": accessToken,
+        "refresh_token": refreshToken,
+        "expires_in": 3600,
+        "token_type": "Bearer",
+    })
 }
 
 func LoginUserHandler(c *gin.Context) {
@@ -118,27 +90,16 @@ func LoginUserHandler(c *gin.Context) {
         return
     }
 
-    token, err := jwt.CreateToken(user.Email)
+    accessToken, refreshToken, err := jwt.CreateTokens(user.Roles, user.Email)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access token"})
         return
     }
 
-    c.IndentedJSON(http.StatusOK, gin.H{"id_token": token, "access_token": token, "refresh_token": token, "expires_in": 3600, "token_type": "Bearer"})
-}
-
-func GetAllUsers(c *gin.Context) {
-    _, exists := c.Get("email")
-
-    if !exists {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user information"})
-        return
-    }
-    
-    var users []sql.User
-    if err := sql.DB.Find(&users).Error; err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve users"})
-        return
-    }
-    c.IndentedJSON(http.StatusOK, gin.H{"users": users})
+    c.IndentedJSON(http.StatusOK, gin.H{
+        "access_token": accessToken,
+        "refresh_token": refreshToken,
+        "expires_in": 3600, 
+        "token_type": "Bearer",
+    })
 }
