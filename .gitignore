@@ -1,0 +1,51 @@
+# Compiled Go binaries and executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+*.out
+*.test
+/main
+/tmp
+
+# Dependency directories
+vendor/
+
+# Go build directories
+bin/
+pkg/
+
+# Go Module cache
+go.sum
+go.mod
+
+# Ignore auto-generated files
+# when running "go generate"
+*.gen.go
+
+# Go Workspace files (for multi-module projects)
+go.work
+
+# VSCode specific files
+.vscode/
+*.code-workspace
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+*.db
+
+# Local environment files
+.env
+.local
+
+# Private keys and certificates
+*.pem
