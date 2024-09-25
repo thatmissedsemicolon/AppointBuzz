@@ -9,14 +9,14 @@ import (
 )
 
 func GetAllUsers(c *gin.Context) {
-    if _, ok, err := CheckUserPermissions(c, []string{"admin"}); !ok {
-        c.IndentedJSON(http.StatusForbidden, gin.H{"error": err})
+    if _, ok, err := checkUserPermissions(c, []string{"admin"}); !ok {
+		responseError(c, http.StatusForbidden, err)
         return
     }
 
     var users []db.User
     if err := db.DB.Find(&users).Error; err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve users"})
+		responseError(c, http.StatusInternalServerError, "Something went wrong")
         return
     }
 

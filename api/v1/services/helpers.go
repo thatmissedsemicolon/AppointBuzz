@@ -1,7 +1,6 @@
 package services
 
 import (
-	"net/http"
 	"net/mail"
 	"strings"
 
@@ -11,14 +10,6 @@ import (
 
 	db "appointbuzz/api/v1/lib"
 )
-
-func bindJSON(c *gin.Context, target interface{}) error {
-    if err := c.BindJSON(target); err != nil {
-        c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format"})
-        return err
-    }
-    return nil
-}
 
 func validateEmail(email string) (bool, error) {
     _, err := mail.ParseAddress(email)
@@ -62,7 +53,7 @@ func contains(slice []string, item string) bool {
     return false
 }
 
-func CheckUserPermissions(c *gin.Context, requiredRoles []string) (string, bool, string) {
+func checkUserPermissions(c *gin.Context, requiredRoles []string) (string, bool, string) {
     email, emailExists := c.Get("email")
     roles, rolesExists := c.Get("roles")
 
@@ -78,4 +69,8 @@ func CheckUserPermissions(c *gin.Context, requiredRoles []string) (string, bool,
     }
 
     return email.(string), false, "Insufficient permissions"
+}
+
+func responseError(c *gin.Context, status int, message string) {
+	c.IndentedJSON(status, gin.H{"error": message})
 }

@@ -1,49 +1,60 @@
 package services
 
 import (
+	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
-	db "appointbuzz/api/v1/lib"
+	"appointbuzz/api/v1/lib"
 )
 
 func GetUser(c *gin.Context) {
-	email, ok, errMsg := CheckUserPermissions(c, []string{"user", "admin"})
-	if !ok {
-		c.IndentedJSON(http.StatusForbidden, gin.H{"error": errMsg})
-		return
-	}
+    email, ok, err := checkUserPermissions(c, []string{"user", "admin"})
+    if !ok {
+		responseError(c, http.StatusForbidden, err)
+        return
+    }
 
-	var user db.User
-	if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
-		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "User not found"})
-		return
-	}
+    var user lib.User
+    if cachedUser, err := lib.GetValue(email); err == nil {
+        if json.Unmarshal([]byte(cachedUser), &user) == nil {
+            c.IndentedJSON(http.StatusOK, gin.H{"user": user})
+            return
+        }
+    }
 
-	c.IndentedJSON(http.StatusOK, gin.H{"user": user})
+    if err := lib.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		responseError(c, http.StatusNotFound, "User not found")
+        return
+    }
+
+    userJson, _ := json.Marshal(user)
+    lib.SetValue(email, string(userJson), 10*time.Minute)
+    c.IndentedJSON(http.StatusOK, gin.H{"user": user})
 }
 
 func UpdateUser(c *gin.Context) {
-    email, ok, errMsg := CheckUserPermissions(c, []string{"user", "admin"})
+    email, ok, err := checkUserPermissions(c, []string{"user", "admin"})
     if !ok {
-        c.IndentedJSON(http.StatusForbidden, gin.H{"error": errMsg})
+		responseError(c, http.StatusForbidden, err)
         return
     }
 
-    var user db.User
-    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
-        c.IndentedJSON(http.StatusNotFound, gin.H{"error": "User not found"})
+    var user lib.User
+    if err := lib.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		responseError(c, http.StatusNotFound, "User not found")
         return
     }
 
-	if err := bindJSON(c, &user); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
+	if err := c.ShouldBindJSON(&user); err != nil {
+        responseError(c, http.StatusBadRequest, "Invalid request data")
         return
     }
 
-    if err := db.DB.Save(&user).Error; err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+    if err := lib.DB.Save(&user).Error; err != nil {
+		responseError(c, http.StatusInternalServerError, "Something went wrong")
         return
     }
 

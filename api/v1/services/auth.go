@@ -1,12 +1,10 @@
 package services
 
 import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
-
-	services "appointbuzz/api/v1/lib"
+    "net/http"
+    "github.com/gin-gonic/gin"
+    "golang.org/x/crypto/bcrypt"
+    lib "appointbuzz/api/v1/lib"
 )
 
 type UserRequest struct {
@@ -17,44 +15,29 @@ type UserRequest struct {
 
 func CreateUserHandler(c *gin.Context) {
     var signupReq UserRequest
-    if err := bindJSON(c, &signupReq); err != nil {
+    if err := c.ShouldBindJSON(&signupReq); err != nil {
+        responseError(c, http.StatusBadRequest, "Invalid request data")
         return
     }
 
-    _ , err := validateEmail(signupReq.Email)
-    if err != nil {
-        c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid email address"})
+    if _, err := validateEmail(signupReq.Email); err != nil {
+        responseError(c, http.StatusBadRequest, "Invalid email address")
         return
     }
 
-    exists, err := userExists(signupReq.Email)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-        return
-    }
-    if exists {
-        c.IndentedJSON(http.StatusConflict, gin.H{"error": "User already exists"})
+    if exists, _ := userExists(signupReq.Email); exists {
+        responseError(c, http.StatusConflict, "User already exists")
         return
     }
 
-    hashedPassword, err := hashPassword(signupReq.Password)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+    hashedPassword, _ := hashPassword(signupReq.Password)
+    newUser := lib.User{Name: signupReq.Name, Email: signupReq.Email, Password: hashedPassword, Roles: convertRolesToString([]string{"user"})}
+    if err := lib.DB.Create(&newUser).Error; err != nil {
+        responseError(c, http.StatusInternalServerError, "Something went wrong")
         return
     }
 
-    newUser := services.User{Name: signupReq.Name, Email: signupReq.Email, Password: hashedPassword, Roles: convertRolesToString([]string{"user"})}
-    if err := services.DB.Create(&newUser).Error; err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-        return
-    }
-
-    accessToken, refreshToken, err := services.CreateTokens(newUser.Roles, newUser.Email)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-        return
-    }
-
+    accessToken, refreshToken, _ := lib.CreateTokens(newUser.Roles, newUser.Email)
     c.IndentedJSON(http.StatusCreated, gin.H{
         "access_token": accessToken,
         "refresh_token": refreshToken,
@@ -65,41 +48,27 @@ func CreateUserHandler(c *gin.Context) {
 
 func LoginUserHandler(c *gin.Context) {
     var loginReq UserRequest
-    if err := bindJSON(c, &loginReq); err != nil {
+    if err := c.ShouldBindJSON(&loginReq); err != nil {
+        responseError(c, http.StatusBadRequest, "Invalid request data")
         return
     }
 
-    exists, err := userExists(loginReq.Email)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-        return
-    }
-    if !exists {
-        c.IndentedJSON(http.StatusUnauthorized, gin.H{"error": "Invalid login credentials"})
+    var user lib.User
+    if err := lib.DB.Where("email = ?", loginReq.Email).First(&user).Error; err != nil {
+        responseError(c, http.StatusUnauthorized, "Invalid login credentials")
         return
     }
 
-    var user services.User
-    if err := services.DB.Where("email = ?", loginReq.Email).First(&user).Error; err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+    if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginReq.Password)) != nil {
+        responseError(c, http.StatusUnauthorized, "Incorrect email or password")
         return
     }
 
-    if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginReq.Password)); err != nil {
-        c.IndentedJSON(http.StatusUnauthorized, gin.H{"error": "Incorrect email or password"})
-        return
-    }
-
-    accessToken, refreshToken, err := services.CreateTokens(user.Roles, user.Email)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
-        return
-    }
-
+    accessToken, refreshToken, _ := lib.CreateTokens(user.Roles, user.Email)
     c.IndentedJSON(http.StatusOK, gin.H{
         "access_token": accessToken,
         "refresh_token": refreshToken,
-        "expires_in": 3600, 
+        "expires_in": 3600,
         "token_type": "Bearer",
     })
 }
