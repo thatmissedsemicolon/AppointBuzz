@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	db "appointbuzz/api/v1/lib"
+	"appointbuzz/api/v1/lib"
 )
 
 func GetAllUsers(c *gin.Context) {
@@ -14,8 +14,8 @@ func GetAllUsers(c *gin.Context) {
         return
     }
 
-    var users []db.User
-    if err := db.DB.Find(&users).Error; err != nil {
+    var users []lib.User
+    if err := lib.DB.Find(&users).Error; err != nil {
 		responseError(c, http.StatusInternalServerError, "Something went wrong")
         return
     }

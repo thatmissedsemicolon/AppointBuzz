@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
-	db "appointbuzz/api/v1/lib"
+	"appointbuzz/api/v1/lib"
 )
 
 func validateEmail(email string) (bool, error) {
@@ -17,8 +17,8 @@ func validateEmail(email string) (bool, error) {
 }
 
 func userExists(email string) (bool, error) {
-    var user db.User
-    err := db.DB.Where("email = ?", email).First(&user).Error
+    var user lib.User
+    err := lib.DB.Where("email = ?", email).First(&user).Error
     if err != nil {
         if err == gorm.ErrRecordNotFound {
             return false, nil

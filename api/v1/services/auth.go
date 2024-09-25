@@ -4,7 +4,7 @@ import (
     "net/http"
     "github.com/gin-gonic/gin"
     "golang.org/x/crypto/bcrypt"
-    lib "appointbuzz/api/v1/lib"
+    "appointbuzz/api/v1/lib"
 )
 
 type UserRequest struct {

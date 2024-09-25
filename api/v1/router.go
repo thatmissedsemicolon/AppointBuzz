@@ -2,7 +2,7 @@ package router
 
 import (
     "github.com/gin-gonic/gin"
-    services "appointbuzz/api/v1/services"
+    "appointbuzz/api/v1/services"
 )
 
 func AuthRoutes(group *gin.RouterGroup) {

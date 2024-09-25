@@ -2,8 +2,8 @@ package v1
 
 import (
     "github.com/gin-gonic/gin"
-    router "appointbuzz/api/v1"
-    jwt "appointbuzz/api/v1/lib"
+    "appointbuzz/api/v1"
+    "appointbuzz/api/v1/lib"
 )
 
 func SetupRouter(route *gin.Engine) *gin.RouterGroup {
@@ -15,13 +15,13 @@ func SetupRouter(route *gin.Engine) *gin.RouterGroup {
     }
 
     protectedRoutes := api.Group("/")
-    protectedRoutes.Use(jwt.JWTAuthMiddleware())
+    protectedRoutes.Use(lib.JWTAuthMiddleware())
     {
         router.UserRoutes(protectedRoutes)
     }
 
     adminProtectedRoutes := api.Group("/admin")
-    adminProtectedRoutes.Use(jwt.JWTAuthMiddleware())
+    adminProtectedRoutes.Use(lib.JWTAuthMiddleware())
     {
         router.AdminRoutes(adminProtectedRoutes)
     }

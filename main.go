@@ -3,8 +3,8 @@ package main
 import (
     "github.com/gin-gonic/gin"
 
-    lib "appointbuzz/api/v1/lib"
-    v1 "appointbuzz/api"
+    "appointbuzz/api/v1/lib"
+    "appointbuzz/api"
 )
 
 func main() {
