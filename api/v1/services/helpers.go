@@ -61,3 +61,21 @@ func contains(slice []string, item string) bool {
     }
     return false
 }
+
+func CheckUserPermissions(c *gin.Context, requiredRoles []string) (string, bool, string) {
+    email, emailExists := c.Get("email")
+    roles, rolesExists := c.Get("roles")
+
+    if !emailExists || !rolesExists {
+        return email.(string), false, "Missing user information"
+    }
+
+    rolesList := convertStringToRoles(roles.(string))
+    for _, role := range requiredRoles {
+        if contains(rolesList, role) {
+            return email.(string), true, ""
+        }
+    }
+
+    return email.(string), false, "Insufficient permissions"
+}

@@ -20,5 +20,11 @@ func SetupRouter(route *gin.Engine) *gin.RouterGroup {
         router.UserRoutes(protectedRoutes)
     }
 
+    adminProtectedRoutes := api.Group("/admin")
+    adminProtectedRoutes.Use(jwt.JWTAuthMiddleware())
+    {
+        router.AdminRoutes(adminProtectedRoutes)
+    }
+
     return api
 }

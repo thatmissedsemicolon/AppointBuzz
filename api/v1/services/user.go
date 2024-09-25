@@ -8,26 +8,44 @@ import (
 	db "appointbuzz/api/v1/lib"
 )
 
-func GetAllUsers(c *gin.Context) {
-    _, emailExists := c.Get("email")
-    roles, rolesExists := c.Get("roles")
-    
-    if !emailExists || !rolesExists {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Missing user information"})
+func GetUser(c *gin.Context) {
+	email, ok, errMsg := CheckUserPermissions(c, []string{"user", "admin"})
+	if !ok {
+		c.IndentedJSON(http.StatusForbidden, gin.H{"error": errMsg})
+		return
+	}
+
+	var user db.User
+	if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"user": user})
+}
+
+func UpdateUser(c *gin.Context) {
+    email, ok, errMsg := CheckUserPermissions(c, []string{"user", "admin"})
+    if !ok {
+        c.IndentedJSON(http.StatusForbidden, gin.H{"error": errMsg})
         return
     }
 
-    rolesList := convertStringToRoles(roles.(string))
-    if !contains(rolesList, "user") && !contains(rolesList, "admin") {
-        c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
+    var user db.User
+    if err := db.DB.Where("email = ?", email).First(&user).Error; err != nil {
+        c.IndentedJSON(http.StatusNotFound, gin.H{"error": "User not found"})
         return
     }
 
-    var users []db.User
-    if err := db.DB.Find(&users).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve users"})
+	if err := bindJSON(c, &user); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
         return
     }
 
-    c.JSON(http.StatusOK, gin.H{"users": users})
+    if err := db.DB.Save(&user).Error; err != nil {
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+        return
+    }
+
+    c.IndentedJSON(http.StatusOK, gin.H{"message": "User updated successfully"})
 }

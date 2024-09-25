@@ -11,5 +11,10 @@ func AuthRoutes(group *gin.RouterGroup) {
 }
 
 func UserRoutes(group *gin.RouterGroup) {
+    group.GET("/user", services.GetUser)
+    group.PATCH("/user/update", services.UpdateUser)
+}
+
+func AdminRoutes(group *gin.RouterGroup) {
     group.GET("/users", services.GetAllUsers)
 }

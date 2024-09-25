@@ -51,7 +51,7 @@ func CreateUserHandler(c *gin.Context) {
 
     accessToken, refreshToken, err := services.CreateTokens(newUser.Roles, newUser.Email)
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
         return
     }
 
@@ -92,7 +92,7 @@ func LoginUserHandler(c *gin.Context) {
 
     accessToken, refreshToken, err := services.CreateTokens(user.Roles, user.Email)
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
         return
     }
 
