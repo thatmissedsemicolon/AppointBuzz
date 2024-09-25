@@ -3,7 +3,7 @@ package v1
 import (
     "github.com/gin-gonic/gin"
     router "appointbuzz/api/v1"
-    jwt "appointbuzz/lib"
+    jwt "appointbuzz/api/v1/lib"
 )
 
 func SetupRouter(route *gin.Engine) *gin.RouterGroup {

@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
-	sql "appointbuzz/api/v1/sql"
+	db "appointbuzz/api/v1/lib"
 )
 
 func bindJSON(c *gin.Context, target interface{}) error {
@@ -26,8 +26,8 @@ func validateEmail(email string) (bool, error) {
 }
 
 func userExists(email string) (bool, error) {
-    var user sql.User
-    err := sql.DB.Where("email = ?", email).First(&user).Error
+    var user db.User
+    err := db.DB.Where("email = ?", email).First(&user).Error
     if err != nil {
         if err == gorm.ErrRecordNotFound {
             return false, nil

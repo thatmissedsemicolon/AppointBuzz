@@ -4,13 +4,13 @@ import (
 	"github.com/gin-gonic/gin"
 
 	v1 "appointbuzz/api"
-	sql "appointbuzz/api/v1/sql"
+	db "appointbuzz/api/v1/lib"
 )
 
 func main() {
     router := gin.Default()
 
-    sql.InitializeDatabase()
+    db.InitializeDatabase()
 
     v1.SetupRouter(router)
 

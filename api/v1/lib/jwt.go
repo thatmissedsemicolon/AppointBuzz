@@ -1,4 +1,4 @@
-package jwt
+package lib
 
 import (
 	"crypto/rsa"
@@ -90,7 +90,7 @@ func loadPrivateKey(path string) error {
 func JWTAuthMiddleware() gin.HandlerFunc {
     return func(c *gin.Context) {
         if err := loadKeys(); err != nil {
-            c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to load RSA keys"})
+            c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
             return
         }
 

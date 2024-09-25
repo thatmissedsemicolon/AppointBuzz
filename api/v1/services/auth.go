@@ -6,11 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 
-	sql "appointbuzz/api/v1/sql"
-	jwt "appointbuzz/lib"
+	services "appointbuzz/api/v1/lib"
 )
 
 type UserRequest struct {
+    Name     string `json:"name"`
     Email    string `json:"email"`
     Password string `json:"password"`
 }
@@ -29,7 +29,7 @@ func CreateUserHandler(c *gin.Context) {
 
     exists, err := userExists(signupReq.Email)
     if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
         return
     }
     if exists {
@@ -39,19 +39,19 @@ func CreateUserHandler(c *gin.Context) {
 
     hashedPassword, err := hashPassword(signupReq.Password)
     if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
         return
     }
 
-    newUser := sql.User{Email: signupReq.Email, Password: hashedPassword, Roles: convertRolesToString([]string{"user"})}
-    if err := sql.DB.Create(&newUser).Error; err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+    newUser := services.User{Name: signupReq.Name, Email: signupReq.Email, Password: hashedPassword, Roles: convertRolesToString([]string{"user"})}
+    if err := services.DB.Create(&newUser).Error; err != nil {
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
         return
     }
 
-    accessToken, refreshToken, err := jwt.CreateTokens(newUser.Roles, newUser.Email)
+    accessToken, refreshToken, err := services.CreateTokens(newUser.Roles, newUser.Email)
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access token"})
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
         return
     }
 
@@ -71,7 +71,7 @@ func LoginUserHandler(c *gin.Context) {
 
     exists, err := userExists(loginReq.Email)
     if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
         return
     }
     if !exists {
@@ -79,9 +79,9 @@ func LoginUserHandler(c *gin.Context) {
         return
     }
 
-    var user sql.User
-    if err := sql.DB.Where("email = ?", loginReq.Email).First(&user).Error; err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+    var user services.User
+    if err := services.DB.Where("email = ?", loginReq.Email).First(&user).Error; err != nil {
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
         return
     }
 
@@ -90,9 +90,9 @@ func LoginUserHandler(c *gin.Context) {
         return
     }
 
-    accessToken, refreshToken, err := jwt.CreateTokens(user.Roles, user.Email)
+    accessToken, refreshToken, err := services.CreateTokens(user.Roles, user.Email)
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access token"})
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
         return
     }
 
