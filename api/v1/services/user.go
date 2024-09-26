@@ -11,44 +11,44 @@ import (
 )
 
 func GetUserHandler(c *gin.Context) {
-    email, ok, err := checkUserPermissions(c, []string{"user"})
-    if !ok {
+	email, ok, err := checkUserPermissions(c, []string{"user"})
+	if !ok {
 		responseError(c, http.StatusForbidden, err)
-        return
-    }
+		return
+	}
 
-    var user lib.User
-    if cachedUser, err := lib.GetValue(email); err == nil {
-        if json.Unmarshal([]byte(cachedUser), &user) == nil {
-            c.IndentedJSON(http.StatusOK, gin.H{"user": user})
-            return
-        }
-    }
+	var user lib.User
+	if cachedUser, err := lib.GetValue(email); err == nil {
+		if json.Unmarshal([]byte(cachedUser), &user) == nil {
+			c.IndentedJSON(http.StatusOK, gin.H{"user": user})
+			return
+		}
+	}
 
-    if err := lib.DB.Where("email = ?", email).First(&user).Error; err != nil {
+	if err := lib.DB.Where("email = ?", email).First(&user).Error; err != nil {
 		responseError(c, http.StatusNotFound, "User not found")
-        return
-    }
+		return
+	}
 
-    userJson, _ := json.Marshal(user)
-    lib.SetValue(email, string(userJson), 10*time.Minute)
-    c.IndentedJSON(http.StatusOK, gin.H{"user": user})
+	userJson, _ := json.Marshal(user)
+	lib.SetValue(email, string(userJson), 10*time.Minute)
+	c.IndentedJSON(http.StatusOK, gin.H{"user": user})
 }
 
 func UpdateUserHandler(c *gin.Context) {
-    email, ok, err := checkUserPermissions(c, []string{"user"})
-    if !ok {
+	email, ok, err := checkUserPermissions(c, []string{"user"})
+	if !ok {
 		responseError(c, http.StatusForbidden, err)
-        return
-    }
+		return
+	}
 
-    var updates map[string]interface{}
+	var updates map[string]interface{}
 	if err := c.ShouldBindJSON(&updates); err != nil {
 		responseError(c, http.StatusBadRequest, "Invalid request data")
 		return
 	}
 
-    if password, exists := updates["password"]; exists {
+	if password, exists := updates["password"]; exists {
 		hashedPassword, err := hashPassword(password.(string))
 		if err != nil {
 			responseError(c, http.StatusInternalServerError, "Something went wrong")
@@ -58,36 +58,36 @@ func UpdateUserHandler(c *gin.Context) {
 	}
 
 	result := lib.DB.Model(&lib.User{}).Where("email = ?", email).Updates(updates)
-    if result.Error != nil {
-        responseError(c, http.StatusInternalServerError, "Update failed: " + result.Error.Error())
-        return
-    }
+	if result.Error != nil {
+		responseError(c, http.StatusInternalServerError, "Update failed: "+result.Error.Error())
+		return
+	}
 
-    if result.RowsAffected == 0 {
-        responseError(c, http.StatusNotFound, "No user found or no new data provided")
-        return
-    }
+	if result.RowsAffected == 0 {
+		responseError(c, http.StatusNotFound, "No user found or no new data provided")
+		return
+	}
 
-    c.IndentedJSON(http.StatusOK, gin.H{"message": "User updated successfully"})
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "User updated successfully"})
 }
 
 func DeleteUserHandler(c *gin.Context) {
-    email, ok, err := checkUserPermissions(c, []string{"user"})
-    if !ok {
-        responseError(c, http.StatusForbidden, err)
-        return
-    }
+	email, ok, err := checkUserPermissions(c, []string{"user"})
+	if !ok {
+		responseError(c, http.StatusForbidden, err)
+		return
+	}
 
-    result := lib.DB.Where("email = ?", email).Delete(&lib.User{})
-    if result.Error != nil {
-        responseError(c, http.StatusInternalServerError, "Something went wrong")
-        return
-    }
+	result := lib.DB.Where("email = ?", email).Delete(&lib.User{})
+	if result.Error != nil {
+		responseError(c, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
 
-    if result.RowsAffected == 0 {
-        responseError(c, http.StatusNotFound, "No user found")
-        return
-    }
+	if result.RowsAffected == 0 {
+		responseError(c, http.StatusNotFound, "No user found")
+		return
+	}
 
-    c.IndentedJSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
