@@ -31,7 +31,6 @@ type User struct {
     Roles          string         `gorm:"type:text;not null;default:''" json:"-"`
     Status         string         `gorm:"type:text;not null;default:'active'" json:"-"`
     ProfilePicture *string        `gorm:"type:text" json:"profile_picture,omitempty"`
-    LoginAttempts  int            `gorm:"type:int;default:0" json:"-"`
     LastLoginAt    *time.Time     `gorm:"type:timestamp" json:"-"`
     CreatedAt      time.Time      `gorm:"autoCreateTime" json:"-"`
     UpdatedAt      time.Time      `gorm:"autoUpdateTime" json:"-"`

@@ -5,16 +5,17 @@ import (
     "appointbuzz/api/v1/services"
 )
 
-func AuthRoutes(group *gin.RouterGroup) {
+func ConfigureAuthRoutes(group *gin.RouterGroup) {
     group.POST("/signup", services.CreateUserHandler)
     group.POST("/login", services.LoginUserHandler)
 }
 
-func UserRoutes(group *gin.RouterGroup) {
-    group.GET("/user", services.GetUser)
-    group.PATCH("/user/update", services.UpdateUser)
+func ConfigureUserRoutes(group *gin.RouterGroup) {
+    group.GET("/user", services.GetUserHandler)
+    group.PATCH("/user", services.UpdateUserHandler)
+    group.DELETE("/user", services.DeleteUserHandler)
 }
 
-func AdminRoutes(group *gin.RouterGroup) {
-    group.GET("/users", services.GetAllUsers)
+func ConfigureAdminRoutes(group *gin.RouterGroup) {
+    group.GET("/users", services.GetAllUsersHandler)
 }

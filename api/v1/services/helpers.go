@@ -1,6 +1,7 @@
 package services
 
 import (
+	"net/http"
 	"net/mail"
 	"strings"
 
@@ -16,20 +17,20 @@ func validateEmail(email string) (bool, error) {
     return err == nil, err
 }
 
-func userExists(email string) (bool, error) {
+func userExists(email string) (exists bool, isDeleted bool, err error) {
     var user lib.User
-    err := lib.DB.Where("email = ?", email).First(&user).Error
+    err = lib.DB.Unscoped().Where("email = ?", email).First(&user).Error
     if err != nil {
         if err == gorm.ErrRecordNotFound {
-            return false, nil
+            return false, false, nil
         }
-        return false, err
+        return false, false, err
     }
-    return true, nil
+    return true, !user.DeletedAt.Time.IsZero(), nil
 }
 
 func hashPassword(password string) (string, error) {
-    bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+    bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
     return string(bytes), err
 }
 
@@ -69,6 +70,31 @@ func checkUserPermissions(c *gin.Context, requiredRoles []string) (string, bool,
     }
 
     return email.(string), false, "Insufficient permissions"
+}
+
+func handleExistingUserResponse(exists bool, isDeleted bool) (int, string) {
+    if exists {
+        if isDeleted {
+            return http.StatusGone, "This account has been permanently deleted. If you believe this was a mistake or require further assistance, please contact support."
+        }
+        return http.StatusConflict, "User already exists."
+    }
+    return 0, ""
+}
+
+func issueTokens(c *gin.Context, user lib.User) {
+    accessToken, refreshToken, err := lib.CreateTokens(user.Roles, user.Email)
+    if err != nil {
+        responseError(c, http.StatusInternalServerError, "Something went wrong")
+        return
+    }
+
+    c.IndentedJSON(http.StatusOK, gin.H{
+        "access_token": accessToken,
+        "refresh_token": refreshToken,
+        "expires_in": 3600,
+        "token_type": "Bearer",
+    })
 }
 
 func responseError(c *gin.Context, status int, message string) {

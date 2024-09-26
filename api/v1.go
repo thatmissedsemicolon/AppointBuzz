@@ -11,19 +11,19 @@ func SetupRouter(route *gin.Engine) *gin.RouterGroup {
 
     authGroup := api.Group("/auth")
     {
-        router.AuthRoutes(authGroup)
+        router.ConfigureAuthRoutes(authGroup)
     }
 
     protectedRoutes := api.Group("/")
     protectedRoutes.Use(lib.JWTAuthMiddleware())
     {
-        router.UserRoutes(protectedRoutes)
+        router.ConfigureUserRoutes(protectedRoutes)
     }
 
     adminProtectedRoutes := api.Group("/admin")
     adminProtectedRoutes.Use(lib.JWTAuthMiddleware())
     {
-        router.AdminRoutes(adminProtectedRoutes)
+        router.ConfigureAdminRoutes(adminProtectedRoutes)
     }
 
     return api

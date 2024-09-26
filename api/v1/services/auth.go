@@ -1,10 +1,11 @@
 package services
 
 import (
-    "net/http"
-    "github.com/gin-gonic/gin"
-    "golang.org/x/crypto/bcrypt"
-    "appointbuzz/api/v1/lib"
+	"appointbuzz/api/v1/lib"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserRequest struct {
@@ -25,8 +26,15 @@ func CreateUserHandler(c *gin.Context) {
         return
     }
 
-    if exists, _ := userExists(signupReq.Email); exists {
-        responseError(c, http.StatusConflict, "User already exists")
+    exists, isDeleted, err := userExists(signupReq.Email)
+    if err != nil {
+        responseError(c, http.StatusInternalServerError, "Something went wrong")
+        return
+    }
+
+    statusCode, message := handleExistingUserResponse(exists, isDeleted)
+    if statusCode != 0 {
+        responseError(c, statusCode, message)
         return
     }
 
@@ -37,13 +45,7 @@ func CreateUserHandler(c *gin.Context) {
         return
     }
 
-    accessToken, refreshToken, _ := lib.CreateTokens(newUser.Roles, newUser.Email)
-    c.IndentedJSON(http.StatusCreated, gin.H{
-        "access_token": accessToken,
-        "refresh_token": refreshToken,
-        "expires_in": 3600,
-        "token_type": "Bearer",
-    })
+    issueTokens(c, newUser)
 }
 
 func LoginUserHandler(c *gin.Context) {
@@ -64,11 +66,5 @@ func LoginUserHandler(c *gin.Context) {
         return
     }
 
-    accessToken, refreshToken, _ := lib.CreateTokens(user.Roles, user.Email)
-    c.IndentedJSON(http.StatusOK, gin.H{
-        "access_token": accessToken,
-        "refresh_token": refreshToken,
-        "expires_in": 3600,
-        "token_type": "Bearer",
-    })
+    issueTokens(c, user)
 }
