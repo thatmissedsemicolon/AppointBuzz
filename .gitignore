@@ -13,6 +13,7 @@
 
 # Dependency directories
 vendor/
+/templates/
 
 # Go build directories
 bin/

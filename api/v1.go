@@ -9,6 +9,11 @@ import (
 func SetupRouter(route *gin.Engine) *gin.RouterGroup {
 	api := route.Group("/api/v1")
 
+    formGroup := api.Group("/form")
+    {
+        router.ConfigureFormRoutes(formGroup)
+    }
+
 	authGroup := api.Group("/auth")
 	{
 		router.ConfigureAuthRoutes(authGroup)

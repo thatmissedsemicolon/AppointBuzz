@@ -41,3 +41,21 @@ func SetValue(key string, value string, expiration time.Duration) error {
 	}
 	return nil
 }
+
+func DeleteValue(key string) error {
+    err := Rdb.Del(ctx, key).Err()
+    if err != nil {
+        log.Printf("Failed to delete value from Redis: %v", err)
+        return err
+    }
+    return nil
+}
+
+func GetTTL(key string) (int64, error) {
+	ttl, err := Rdb.TTL(ctx, key).Result()
+	if err != nil {
+		log.Printf("Failed to get TTL from Redis: %v", err)
+		return 0, err
+	}
+	return int64(ttl.Seconds()), nil
+}

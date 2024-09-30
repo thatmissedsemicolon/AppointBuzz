@@ -9,11 +9,12 @@ import (
 
 func main() {
 	lib.InitRedis()
-
 	lib.InitializeDatabase()
 
 	router := gin.Default()
+
 	v1.SetupRouter(router)
+
 	router.SetTrustedProxies(nil)
 
 	router.Run(":8000")

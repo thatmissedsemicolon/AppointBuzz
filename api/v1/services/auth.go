@@ -2,7 +2,10 @@ package services
 
 import (
 	"appointbuzz/api/v1/lib"
+	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -45,7 +48,7 @@ func CreateUserHandler(c *gin.Context) {
 		return
 	}
 
-	issueTokens(c, newUser)
+	c.IndentedJSON(http.StatusCreated, gin.H{"message": "User created successfully"})
 }
 
 func LoginUserHandler(c *gin.Context) {
@@ -55,16 +58,31 @@ func LoginUserHandler(c *gin.Context) {
 		return
 	}
 
+	loginAttemptsKey := "login_attempts:" + loginReq.Email
+	attemptsStr, _ := lib.GetValue(loginAttemptsKey)
+	attempts, _ := strconv.Atoi(attemptsStr)
+
+	if attempts >= 3 {
+        ttl, _ := lib.GetTTL(loginAttemptsKey)
+        if ttl > 0 {
+            timeLeft := time.Duration(ttl) * time.Second
+            responseError(c, http.StatusTooManyRequests, fmt.Sprintf("Too many failed login attempts. Please try again in %s.", formatDuration(timeLeft)))
+            return
+        }
+    }
+
 	var user lib.User
-	if err := lib.DB.Where("email = ?", loginReq.Email).First(&user).Error; err != nil {
-		responseError(c, http.StatusUnauthorized, "Invalid login credentials")
-		return
-	}
+	if err := lib.DB.Where("email = ? AND status = ?", loginReq.Email, "active").First(&user).Error; err != nil {
+        responseError(c, http.StatusUnauthorized, "Invalid login credentials or account is inactive")
+        return
+    }
 
 	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginReq.Password)) != nil {
+		lib.SetValue(loginAttemptsKey, strconv.Itoa(attempts+1), 10*time.Minute)
 		responseError(c, http.StatusUnauthorized, "Incorrect email or password")
 		return
 	}
 
+	lib.DeleteValue(loginAttemptsKey)
 	issueTokens(c, user)
 }
